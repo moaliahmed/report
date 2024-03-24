@@ -9,7 +9,8 @@ import 'package:report/screens/auth/log_in_screen.dart';
 import 'package:report/widget/custom_drop_down.dart';
 import 'package:report/widget/custom_scafold_massage.dart';
 import 'package:report/widget/custom_text_feild.dart';
-import 'package:intl/intl.dart';
+
+import '../../widget/custom_show_data_picker.dart';
 
 class SendReport extends StatefulWidget {
   const SendReport({super.key});
@@ -51,7 +52,7 @@ class _SendReportState extends State<SendReport> {
   String ? chronicDiseases ;
   String ? takingMedicationChronically ;
 
-  int currentStep = 0;
+  int currentStep = 1;
 
   bool get isFirstStep => currentStep == 0;
 
@@ -193,51 +194,51 @@ class _SendReportState extends State<SendReport> {
       appBar: AppBar(title: const Text('إرسال تقرير')),
       body: isComplete
           ? Container()
-          : Align(
-              alignment: Alignment.topLeft,
-              child: Stepper(
-                // type: StepperType.horizontal,
-                steps: steps(context),
-                currentStep: currentStep,
-                onStepContinue: () {
-                  if (isLastStep) {
-                    setState(() {
-                      _isLoading = true;
-                    });
-                  } else {
-                    _containValidator();
-                  }
-                },
-                onStepCancel: () {
-                  if (isFirstStep) {
-                  } else {
-                    _cancelValidator();
-                  }
-                },
-              //  onStepTapped: (step) => setState(() => currentStep = step),
-                controlsBuilder: (context, details) => Padding(
-                  padding: EdgeInsets.only(top: 32),
-                  child: Row(
-                    children: [
+          : Directionality(
+        textDirection: TextDirection.rtl,
+            child: Stepper(
+              // type: StepperType.horizontal,
+              steps: steps(context),
+              currentStep: currentStep,
+              onStepContinue: () {
+                if (isLastStep) {
+                  setState(() {
+                    _isLoading = true;
+                  });
+                } else {
+                  _containValidator();
+                }
+              },
+              onStepCancel: () {
+                if (isFirstStep) {
+                } else {
+                  _cancelValidator();
+                }
+              },
+            //  onStepTapped: (step) => setState(() => currentStep = step),
+              controlsBuilder: (context, details) => Padding(
+                padding: EdgeInsets.only(top: 32),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton(
+                          onPressed: details.onStepContinue,
+                          child: Text(isLastStep ? 'Confirm' : 'Next')),
+                    ),
+                    if (!isFirstStep) ...[
+                      SizedBox(width: myWidth * .1),
                       Expanded(
                         child: ElevatedButton(
-                            onPressed: details.onStepContinue,
-                            child: Text(isLastStep ? 'Confirm' : 'Next')),
+                            onPressed:
+                                isFirstStep ? null : details.onStepCancel,
+                            child: Text('Back')),
                       ),
-                      if (!isFirstStep) ...[
-                        SizedBox(width: myWidth * .1),
-                        Expanded(
-                          child: ElevatedButton(
-                              onPressed:
-                                  isFirstStep ? null : details.onStepCancel,
-                              child: Text('Back')),
-                        ),
-                      ]
-                    ],
-                  ),
+                    ]
+                  ],
                 ),
               ),
             ),
+          ),
     );
   }
 
@@ -395,12 +396,14 @@ class _SendReportState extends State<SendReport> {
                 Row(
                   children: [
 
+
+                    Text('اختار صوره'),
                     photo == null
                         ? InkWell(
                       onTap: () => getImage(),
                       child: Container(
                         margin: EdgeInsets.all(8),
-                        height: MediaQuery.of(context).size.height * .1,
+                        height: MediaQuery.of(context).size.height * .05,
                         width: MediaQuery.of(context).size.width * .25,
                         decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(18),
@@ -423,8 +426,6 @@ class _SendReportState extends State<SendReport> {
                         IconButton(onPressed: () =>deleteImage() , icon: Icon(Icons.delete,color: Colors.red,))
                       ],
                     ),
-
-                    Text('اختار صوره')
                   ],
                 ),
                 CustomTextField(
@@ -452,53 +453,9 @@ class _SendReportState extends State<SendReport> {
                   },
                 ),
                 const SizedBox(height: 20),
-                TextFormField(
-                  onTap: () {
-                    showDatePicker(
-                            context: context,
-                            initialDate: DateTime.now(),
-                            firstDate: DateTime.parse('2000-01-01'),
-                            lastDate: DateTime.now())
-                        .then((value) => startDateController.text =
-                            DateFormat.yMMMd().format(value!));
-                  },
-                  controller: startDateController,
-                  decoration: InputDecoration(
-                    label: const Text('تاريخ بدء اﻻستخدام'),
-                    border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12)),
-                  ),
-                  validator: (value) {
-                    if (value!.isEmpty) {
-                      return 'الرجاء ادخال تاريخ بدء اﻻستخدام';
-                    }
-                    return null;
-                  },
-                ),
+                ShowDataPicker(dateController: startDateController,text: 'تاريخ بدء اﻻستخدام',),
                 const SizedBox(height: 20),
-                TextFormField(
-                  onTap: () {
-                    showDatePicker(
-                            context: context,
-                            initialDate: DateTime.now(),
-                            lastDate: DateTime.now(),
-                            firstDate: DateTime.parse('2000-01-01'))
-                        .then((value) => endDateController.text =
-                            DateFormat.yMMMd().format(value!));
-                  },
-                  controller: endDateController,
-                  decoration: InputDecoration(
-                    label: const Text('تاريخ وقف اﻻستخدام'),
-                    border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12)),
-                  ),
-                  validator: (value) {
-                    if (value!.isEmpty) {
-                      return 'الرجاء ادخال تاريخ وقف اﻻستخدام';
-                    }
-                    return null;
-                  },
-                ),
+                ShowDataPicker(dateController: endDateController,text: 'تاريخ بدء اﻻستخدام',),
                 const SizedBox(height: 20),
                 // إضافة CustomDropdownButton لاختيار الجنس
                 CustomDropdownButton(
