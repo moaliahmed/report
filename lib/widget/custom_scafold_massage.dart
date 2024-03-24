@@ -5,9 +5,9 @@ void showCustomSnackBar(BuildContext context, String message) {
     SnackBar(
       content: Text(
         message,
-        textDirection: TextDirection.rtl, // لضمان أن النص يظهر في الجانب الأيمن
+        textDirection: TextDirection.rtl, 
       ),
-      behavior: SnackBarBehavior.floating, // لجعل الرسالة تطفو فوق العناصر الأخرى
+      behavior: SnackBarBehavior.floating, 
     ),
   );
 }
