@@ -37,22 +37,28 @@ class _SendReportState extends State<SendReport> {
   String? governorates;
 
   // step 2   medicament name
-  final TextEditingController medicamentNameController =TextEditingController();
+  final TextEditingController medicamentNameController =
+      TextEditingController();
   final TextEditingController batchNumberController = TextEditingController();
   final TextEditingController theFocusController = TextEditingController();
-  final TextEditingController reasonForUsingTheMedicineController =TextEditingController();
+  final TextEditingController reasonForUsingTheMedicineController =
+      TextEditingController();
   final TextEditingController startDateController = TextEditingController();
   final TextEditingController endDateController = TextEditingController();
   String? theActionTaken;
   String? similarReaction;
-  //step 3  Description of the adverse effect
-  final TextEditingController descriptionEffect =TextEditingController();
-  String ? symptomsAppearOfAnyDevice ;
-  String ? thePatientConditionNow ;
-  String ? chronicDiseases ;
-  String ? takingMedicationChronically ;
 
-  int currentStep = 1;
+  //step 3  Description of the adverse effect
+  final TextEditingController descriptionEffect = TextEditingController();
+  String? symptomsAppearOfAnyDevice;
+
+  String? thePatientConditionNow;
+
+  String? chronicDiseases;
+
+  String? takingMedicationChronically;
+
+  int currentStep = 0;
 
   bool get isFirstStep => currentStep == 0;
 
@@ -62,24 +68,24 @@ class _SendReportState extends State<SendReport> {
   File? photo;
 
   Future getImage() async {
-    await ImagePicker()
-        .pickImage(source: ImageSource.camera)
-        .then((value) {
-      if (value!=null){
+    await ImagePicker().pickImage(source: ImageSource.camera).then((value) {
+      if (value != null) {
         setState(() {
-          photo=File(value.path);
+          photo = File(value.path);
         });
       }
     });
   }
-  deleteImage(){
-    photo=null;
-    setState(() {
-    });
+
+  deleteImage() {
+    photo = null;
+    setState(() {});
   }
 
   void _createUserAndSendReport() async {
-    if (!_formKey.currentState!.validate()&!_formKey2.currentState!.validate()&!_formKey2.currentState!.validate()) {
+    if (!_formKey.currentState!.validate() &
+        !_formKey2.currentState!.validate() &
+        !_formKey2.currentState!.validate()) {
       // إذا لم يتم ملء الحقول بشكل صحيح
       showCustomSnackBar(context, "الرجاء ملئ جميع الحقول");
       return;
@@ -91,7 +97,7 @@ class _SendReportState extends State<SendReport> {
 
     try {
       final UserCredential userCredential =
-      await FirebaseAuth.instance.createUserWithEmailAndPassword(
+          await FirebaseAuth.instance.createUserWithEmailAndPassword(
         email: emailController.text,
         password: passwordController.text,
       );
@@ -119,12 +125,13 @@ class _SendReportState extends State<SendReport> {
   }
 
   void _containValidator() {
-    if (!_formKey.currentState!.validate()&&currentStep==0) {
+    if (!_formKey.currentState!.validate() && currentStep == 0) {
       // إذا لم يتم ملء الحقول بشكل صحيح
       showCustomSnackBar(context, "الرجاء ملئ جميع الحقول بيانات مقدم التقرير");
       return;
-    } else if (!_formKey1.currentState!.validate()&&currentStep==1) {
-      showCustomSnackBar(context, "الرجاء ملئ جميع الحقول المستحضر الطبي المشتبه به");
+    } else if (!_formKey1.currentState!.validate() && currentStep == 1) {
+      showCustomSnackBar(
+          context, "الرجاء ملئ جميع الحقول المستحضر الطبي المشتبه به");
       return;
     }
     setState(() => currentStep += 1);
@@ -151,15 +158,19 @@ class _SendReportState extends State<SendReport> {
     setState(() {
       selectedGender = null;
       governorates = null;
-      selectedReportSubmitter=null;
-      theActionTaken=null;
-      similarReaction=null;
-      symptomsAppearOfAnyDevice=null;
-      thePatientConditionNow=null;
-      chronicDiseases=null;
-      takingMedicationChronically=null;
+      selectedReportSubmitter = null;
+      theActionTaken = null;
+      similarReaction = null;
+      symptomsAppearOfAnyDevice = null;
+      thePatientConditionNow = null;
+      chronicDiseases = null;
+      takingMedicationChronically = null;
     });
-    Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => LogInScreen(),));
+    Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => LogInScreen(),
+        ));
   }
 
   void _handleFirebaseAuthError(FirebaseAuthException e) {
@@ -195,50 +206,50 @@ class _SendReportState extends State<SendReport> {
       body: isComplete
           ? Container()
           : Directionality(
-        textDirection: TextDirection.rtl,
-            child: Stepper(
-              // type: StepperType.horizontal,
-              steps: steps(context),
-              currentStep: currentStep,
-              onStepContinue: () {
-                if (isLastStep) {
-                  setState(() {
-                    _isLoading = true;
-                  });
-                } else {
-                  _containValidator();
-                }
-              },
-              onStepCancel: () {
-                if (isFirstStep) {
-                } else {
-                  _cancelValidator();
-                }
-              },
-            //  onStepTapped: (step) => setState(() => currentStep = step),
-              controlsBuilder: (context, details) => Padding(
-                padding: EdgeInsets.only(top: 32),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: ElevatedButton(
-                          onPressed: details.onStepContinue,
-                          child: Text(isLastStep ? 'Confirm' : 'Next')),
-                    ),
-                    if (!isFirstStep) ...[
-                      SizedBox(width: myWidth * .1),
+              textDirection: TextDirection.rtl,
+              child: Stepper(
+                // type: StepperType.horizontal,
+                steps: steps(context),
+                currentStep: currentStep,
+                onStepContinue: () {
+                  if (isLastStep) {
+                    setState(() {
+                      _isLoading = true;
+                    });
+                  } else {
+                    _containValidator();
+                  }
+                },
+                onStepCancel: () {
+                  if (isFirstStep) {
+                  } else {
+                    _cancelValidator();
+                  }
+                },
+                //  onStepTapped: (step) => setState(() => currentStep = step),
+                controlsBuilder: (context, details) => Padding(
+                  padding: EdgeInsets.only(top: 32),
+                  child: Row(
+                    children: [
                       Expanded(
                         child: ElevatedButton(
-                            onPressed:
-                                isFirstStep ? null : details.onStepCancel,
-                            child: Text('Back')),
+                            onPressed: details.onStepContinue,
+                            child: Text(isLastStep ? 'ارسال' : 'التالي')),
                       ),
-                    ]
-                  ],
+                      if (!isFirstStep) ...[
+                        SizedBox(width: myWidth * .1),
+                        Expanded(
+                          child: ElevatedButton(
+                              onPressed:
+                                  isFirstStep ? null : details.onStepCancel,
+                              child: Text('السابق')),
+                        ),
+                      ]
+                    ],
+                  ),
                 ),
               ),
             ),
-          ),
     );
   }
 
@@ -349,7 +360,7 @@ class _SendReportState extends State<SendReport> {
                   hint: 'رقم التليفون',
                   controller: phoneNumberController,
                   validator: (value) {
-                    if (value == null || value.isEmpty&& value!=11) {
+                    if (value == null || value.isEmpty && value != 11) {
                       return 'الرجاء رقم التليفون';
                     }
                     return null;
@@ -395,37 +406,42 @@ class _SendReportState extends State<SendReport> {
                 ),
                 Row(
                   children: [
-
-
                     Text('اختار صوره'),
                     photo == null
                         ? InkWell(
-                      onTap: () => getImage(),
-                      child: Container(
-                        margin: EdgeInsets.all(8),
-                        height: MediaQuery.of(context).size.height * .05,
-                        width: MediaQuery.of(context).size.width * .25,
-                        decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(18),
-                            color: Colors.grey.shade300),
-                        child: Icon(Icons.add),
-                      ),
-                    )
+                            onTap: () => getImage(),
+                            child: Container(
+                              margin: EdgeInsets.all(8),
+                              height: MediaQuery.of(context).size.height * .05,
+                              width: MediaQuery.of(context).size.width * .25,
+                              decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(18),
+                                  color: Colors.grey.shade300),
+                              child: Icon(Icons.add),
+                            ),
+                          )
                         : Row(
-                      children: [
-                        Container(
-                          margin: EdgeInsets.all(8),
-                          height:MediaQuery.of(context).size.height * .1,
-                          width: MediaQuery.of(context).size.width * .25,
-                          decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(18),
-                              color: Colors.grey.shade300,
-                              image: DecorationImage(
-                                  image: FileImage(photo!))),
-                        ),
-                        IconButton(onPressed: () =>deleteImage() , icon: Icon(Icons.delete,color: Colors.red,))
-                      ],
-                    ),
+                            children: [
+                              Container(
+                                margin: EdgeInsets.all(8),
+                                height: MediaQuery.of(context).size.height * .1,
+                                width: MediaQuery.of(context).size.width * .25,
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(18),
+                                  color: Colors.grey.shade300,
+                                  image:
+                                      DecorationImage(image: FileImage(photo!)),
+                                ),
+                              ),
+                              IconButton(
+                                onPressed: () => deleteImage(),
+                                icon: Icon(
+                                  Icons.delete,
+                                  color: Colors.red,
+                                ),
+                              ),
+                            ],
+                          ),
                   ],
                 ),
                 CustomTextField(
@@ -453,11 +469,16 @@ class _SendReportState extends State<SendReport> {
                   },
                 ),
                 const SizedBox(height: 20),
-                ShowDataPicker(dateController: startDateController,text: 'تاريخ بدء اﻻستخدام',),
+                ShowDataPicker(
+                  dateController: startDateController,
+                  text: 'تاريخ بدء اﻻستخدام',
+                ),
                 const SizedBox(height: 20),
-                ShowDataPicker(dateController: endDateController,text: 'تاريخ بدء اﻻستخدام',),
+                ShowDataPicker(
+                  dateController: endDateController,
+                  text: 'تاريخ وقف اﻻستخدام',
+                ),
                 const SizedBox(height: 20),
-                // إضافة CustomDropdownButton لاختيار الجنس
                 CustomDropdownButton(
                   label: "اﻻلجراء الذي تم اتخازه",
                   hint: "اﻻلجراء الذي تم اتخازه",
@@ -465,12 +486,11 @@ class _SendReportState extends State<SendReport> {
                   selectedItem: theActionTaken,
                   onChanged: (value) {
                     setState(() {
-                      selectedGender = value;
+                      theActionTaken = value;
                     });
                   },
                 ),
                 const SizedBox(height: 20),
-                // إضافة CustomDropdownButton لاختيار المحافظة todo
                 CustomTextField(
                   keyboardType: TextInputType.text,
                   hint: 'سبب استخدام الدواء',
@@ -490,7 +510,7 @@ class _SendReportState extends State<SendReport> {
                   selectedItem: similarReaction,
                   onChanged: (value) {
                     setState(() {
-                      governorates = value;
+                      similarReaction = value;
                     });
                   },
                 ),
