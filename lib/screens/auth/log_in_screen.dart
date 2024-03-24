@@ -61,7 +61,7 @@ class _LogInScreenState extends State<LogInScreen> {
                     onPressed: () {
                       Navigator.of(context).pushAndRemoveUntil(
                           MaterialPageRoute(
-                              builder: (context) => const ShowReport()),
+                              builder: (context) => const SendReport()),
                           (Route<dynamic> route) => false);
                     },
                     child: const Text('ارسال تقرير وانشاء حساب '),

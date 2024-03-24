@@ -7,6 +7,7 @@ class CustomTextField extends StatefulWidget {
   final TextInputType? keyboardType;
   final String? Function(String?) validator;
   final Icon? prefixIcon;
+  final int?maxLength;
   const CustomTextField({
     Key? key,
     required this.hint,
@@ -15,6 +16,7 @@ class CustomTextField extends StatefulWidget {
     this.keyboardType, 
     this.prefixIcon, 
     required this.validator,
+    this.maxLength
   }) : super(key: key);
 
   @override
@@ -39,13 +41,14 @@ class _CustomTextFieldState extends State<CustomTextField> {
   @override
   Widget build(BuildContext context) {
     return TextFormField(
+      maxLength: widget.maxLength,
       controller: widget.controller,
       obscureText: !_isVisible,
       validator: widget.validator,
       keyboardType: widget.keyboardType, // استخدام keyboardType هنا
       decoration: InputDecoration(
         hintText: widget.hint,
-        border: OutlineInputBorder(),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
         prefixIcon:widget.prefixIcon ,
         suffixIcon: widget.isPassword
             ? IconButton(
