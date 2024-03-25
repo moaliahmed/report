@@ -5,7 +5,7 @@ class ShowDataPicker extends StatelessWidget {
   const ShowDataPicker({
     super.key,
     required this.dateController,
-    required this.text
+    required this.text,
   });
 
   final TextEditingController dateController;
@@ -14,14 +14,16 @@ class ShowDataPicker extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return TextFormField(
-      onTap: () {
-        showDatePicker(
-            context: context,
-            initialDate: DateTime.now(),
-            firstDate: DateTime.parse('2000-01-01'),
-            lastDate: DateTime.now())
-            .then((value) => dateController.text =
-            DateFormat.yMMMd().format(value!));
+      onTap: () async {
+        final DateTime? pickedDate = await showDatePicker(
+          context: context,
+          initialDate: DateTime.now(),
+          firstDate: DateTime.parse('2000-01-01'),
+          lastDate: DateTime.now(),
+        );
+        if (pickedDate != null) { // Check if "Cancel" was pressed
+          dateController.text = DateFormat.yMMMd().format(pickedDate);
+        }
       },
       controller: dateController,
       decoration: InputDecoration(
@@ -30,8 +32,8 @@ class ShowDataPicker extends StatelessWidget {
             borderRadius: BorderRadius.circular(12)),
       ),
       validator: (value) {
-        if (value!.isEmpty) {
-          return 'الرجاء ادخال $text';
+        if (value == null || value.isEmpty) {
+          return 'الرجاء إدخال $text';
         }
         return null;
       },

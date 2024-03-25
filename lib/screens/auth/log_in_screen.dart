@@ -1,8 +1,8 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:report/screens/pages/show_report.dart';
+import 'package:report/widget/custom_scafold_massage.dart';
 import 'package:report/widget/custom_text_feild.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:url_launcher/url_launcher_string.dart';
 
 import 'information_screen.dart';
@@ -73,17 +73,16 @@ class _LogInScreenState extends State<LogInScreen> {
                     const SizedBox(height: 10),
                     ElevatedButton(
                       onPressed: () {
-                        Navigator.of(context).pushAndRemoveUntil(
-                            MaterialPageRoute(
-                                builder: (context) =>
-                                    const InformationScreen()),
-                            (Route<dynamic> route) => false);
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                              builder: (context) => const InformationScreen()),
+                        );
                       },
                       child: const Text('ارسال تقرير وانشاء حساب '),
                     ),
                     Container(
                       margin: EdgeInsets.only(top: myHeight * .05),
-                      padding: EdgeInsets.all(12),
+                      padding: const EdgeInsets.all(12),
                       width: myWidth,
                       decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(12),
@@ -97,7 +96,8 @@ class _LogInScreenState extends State<LogInScreen> {
                               'تواصل معنا',
                               style: TextStyle(fontSize: 22, color: Colors.red),
                               textAlign: TextAlign.end,
-                            ),SizedBox(height: myHeight*.02),
+                            ),
+                            SizedBox(height: myHeight * .02),
                             const Text(
                               'مقرات الهيئة: المنيل، العجوزة، الهرم، المعادي، المنصورية',
                               style: TextStyle(fontSize: 18),
@@ -106,15 +106,16 @@ class _LogInScreenState extends State<LogInScreen> {
                                 onPressed: () async {
                                   launchPhoneNumber('+15301');
                                 },
-                                child: Text(
+                                child: const Text(
                                   '15301',
                                   style: TextStyle(fontSize: 18),
                                 )),
                             TextButton(
                                 onPressed: () {
-                                  launchEmail('info@edaegypt.gov.eg','Subject','Body');
+                                  launchEmail('info@edaegypt.gov.eg', 'Subject',
+                                      'Body');
                                 },
-                                child: Text(
+                                child: const Text(
                                   'info@edaegypt.gov.eg',
                                   style: TextStyle(fontSize: 18),
                                 )),
@@ -130,14 +131,14 @@ class _LogInScreenState extends State<LogInScreen> {
         ),
       ),
     );
-
   }
+
   void launchPhoneNumber(String phoneNumber) async {
     final url = 'tel:$phoneNumber';
 
-      await launchUrlString(url);
-
+    await launchUrlString(url);
   }
+
   void launchEmail(String email, String subject, String body) async {
     final Uri emailLaunchUri = Uri(
       scheme: 'mailto',
@@ -150,9 +151,9 @@ class _LogInScreenState extends State<LogInScreen> {
 
     final String emailLaunchString = emailLaunchUri.toString();
 
-      await launchUrlString(emailLaunchString);
-
+    await launchUrlString(emailLaunchString);
   }
+
   Future<void> signInWithEmailAndPassword() async {
     if (!_formKey.currentState!.validate()) {
       return;
@@ -163,12 +164,10 @@ class _LogInScreenState extends State<LogInScreen> {
         email: emailController.text.trim(),
         password: passwordController.text.trim(),
       );
-      Navigator.of(context).push(MaterialPageRoute(builder: (context) {
-        return const ShowReport();
-      }));
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('User logged in successfully')),
-      );
+      Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (context) => const ShowReport()),
+          (Route<dynamic> route) => false);
+      showCustomSnackBar(context, "تم تسجيل الدخول بنجاح");
     } on FirebaseAuthException catch (e) {
       String errorMessage;
       if (e.code == 'user-not-found') {

@@ -45,7 +45,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
       controller: widget.controller,
       obscureText: !_isVisible,
       validator: widget.validator,
-      keyboardType: widget.keyboardType, // استخدام keyboardType هنا
+      keyboardType: widget.keyboardType, 
       decoration: InputDecoration(
         hintText: widget.hint,
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),

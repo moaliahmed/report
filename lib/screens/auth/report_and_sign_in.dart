@@ -1,11 +1,13 @@
 import 'dart:io';
 
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:report/const/app_const.dart';
 import 'package:report/screens/auth/log_in_screen.dart';
+import 'package:report/screens/pages/show_report.dart';
 import 'package:report/widget/custom_drop_down.dart';
 import 'package:report/widget/custom_scafold_massage.dart';
 import 'package:report/widget/custom_text_feild.dart';
@@ -23,7 +25,6 @@ class _SendReportState extends State<SendReport> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final GlobalKey<FormState> _formKey1 = GlobalKey<FormState>();
   final GlobalKey<FormState> _formKey2 = GlobalKey<FormState>();
-  bool _isLoading = false; // لتتبع حالة الإرسال
 
   //step 1
   final TextEditingController emailController = TextEditingController();
@@ -40,6 +41,7 @@ class _SendReportState extends State<SendReport> {
   final TextEditingController medicamentNameController =
       TextEditingController();
   final TextEditingController batchNumberController = TextEditingController();
+  File? batchNumberPhoto;
   final TextEditingController theFocusController = TextEditingController();
   final TextEditingController reasonForUsingTheMedicineController =
       TextEditingController();
@@ -50,9 +52,16 @@ class _SendReportState extends State<SendReport> {
 
   //step 3  Description of the adverse effect
   final TextEditingController descriptionEffect = TextEditingController();
+  final TextEditingController otherChronicDiseaseController =
+      TextEditingController();
+  final TextEditingController otherMedicinesController =
+      TextEditingController();
+  final TextEditingController commentController = TextEditingController();
+
   String? symptomsAppearOfAnyDevice;
 
   String? thePatientConditionNow;
+  String? otherMedicines;
 
   String? chronicDiseases;
 
@@ -66,15 +75,89 @@ class _SendReportState extends State<SendReport> {
 
   bool isComplete = false;
   File? photo;
+  bool _isLoading = false; // متغير لتتبع حالة الإرسال
+
+  Future<void> _pickBatchNumberImage() async {
+    final ImageSource? source = await showDialog<ImageSource>(
+      context: context,
+      builder: (BuildContext context) => AlertDialog(
+        title: const Text("اختر المصدر"),
+        actions: <Widget>[
+          TextButton(
+            child: const Text("الكاميرا"),
+            onPressed: () => Navigator.pop(context, ImageSource.camera),
+          ),
+          TextButton(
+            child: const Text("المعرض"),
+            onPressed: () => Navigator.pop(context, ImageSource.gallery),
+          ),
+        ],
+      ),
+    );
+
+    if (source != null) {
+      final pickedFile = await ImagePicker().pickImage(source: source);
+      if (pickedFile != null) {
+        setState(() {
+          batchNumberPhoto = File(pickedFile.path);
+        });
+        // هنا يمكنك تحميل الصورة إلى الخدمة السحابية وحفظ الرابط إذا لزم الأمر
+      }
+    }
+  }
 
   Future getImage() async {
-    await ImagePicker().pickImage(source: ImageSource.camera).then((value) {
-      if (value != null) {
-        setState(() {
-          photo = File(value.path);
-        });
-      }
-    });
+    showModalBottomSheet(
+      context: context,
+      builder: (BuildContext context) {
+        return SafeArea(
+          child: Wrap(
+            children: <Widget>[
+              ListTile(
+                  leading: const Icon(Icons.photo_library),
+                  title: const Text('المعرض'),
+                  onTap: () {
+                    _pickImage(ImageSource.gallery);
+                    Navigator.of(context).pop();
+                  }),
+              ListTile(
+                leading: const Icon(Icons.photo_camera),
+                title: const Text('الكاميرا'),
+                onTap: () {
+                  _pickImage(ImageSource.camera);
+                  Navigator.of(context).pop();
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _pickImage(ImageSource source) async {
+    final pickedFile = await ImagePicker().pickImage(source: source);
+    if (pickedFile != null) {
+      setState(() {
+        photo = File(pickedFile.path);
+      });
+    }
+  }
+
+  Future<String?> uploadImage(File imageFile) async {
+    try {
+      String fileName =
+          'reports/${DateTime.now().millisecondsSinceEpoch}_${imageFile.path.split('/').last}';
+      print('Start uploading: $fileName'); // بدء عملية الرفع
+      final ref = FirebaseStorage.instance.ref().child(fileName);
+      final result = await ref.putFile(imageFile);
+      final imageUrl = await result.ref.getDownloadURL();
+      print('Image URL: $imageUrl'); // طباعة رابط الصورة بعد الرفع
+      return imageUrl; // هذا الرابط هو الذي ستحفظه في Firestore
+    } catch (e) {
+      print('Error uploading image: $e'); // طباعة الخطأ إذا حدث
+      return null;
+    }
   }
 
   deleteImage() {
@@ -83,8 +166,8 @@ class _SendReportState extends State<SendReport> {
   }
 
   void _createUserAndSendReport() async {
-    if (!_formKey.currentState!.validate() &
-        !_formKey2.currentState!.validate() &
+    if (!_formKey.currentState!.validate() ||
+        !_formKey1.currentState!.validate() ||
         !_formKey2.currentState!.validate()) {
       // إذا لم يتم ملء الحقول بشكل صحيح
       showCustomSnackBar(context, "الرجاء ملئ جميع الحقول");
@@ -92,9 +175,29 @@ class _SendReportState extends State<SendReport> {
     }
 
     setState(() {
-      _isLoading = true;
+      _isLoading = true; // بدء الإرسال وتفعيل مؤشر التحميل
     });
+    String chronicDiseasesValue;
+    if (chronicDiseases == "اخرى") {
+      chronicDiseasesValue = otherChronicDiseaseController.text;
+    } else {
+      chronicDiseasesValue = chronicDiseases ?? "لم يتم الاختيار";
+    }
 
+    String? imageUrl;
+    if (photo != null) {
+      imageUrl = await uploadImage(photo!);
+    }
+
+    // استخدم batchNumberImageUrl إذا كانت هناك صورة محملة، وإلا استخدم النص المدخل
+    String? batchNumberOrImageURL;
+    if (batchNumberPhoto != null) {
+      batchNumberOrImageURL =
+          await uploadImage(batchNumberPhoto!); // رفع الصورة والحصول على الرابط
+    } else {
+      batchNumberOrImageURL =
+          batchNumberController.text; // استخدام النص المدخل يدويًا
+    }
     try {
       final UserCredential userCredential =
           await FirebaseAuth.instance.createUserWithEmailAndPassword(
@@ -103,30 +206,48 @@ class _SendReportState extends State<SendReport> {
       );
 
       await FirebaseFirestore.instance.collection('reports').add({
+        'user_id': userCredential.user!.uid,
         'name': nameController.text,
         'age': ageController.text,
         'weight': weightController.text,
         'gender': selectedGender,
         'governorate': governorates,
-        'user_id': userCredential.user!.uid,
+        'phone_number': phoneNumberController.text,
+        'medicament_name': medicamentNameController.text,
+        'batch_number': batchNumberOrImageURL,
+        'the_focus': theFocusController.text,
+        'reason_for_using': reasonForUsingTheMedicineController.text,
+        'start_date': startDateController.text,
+        'end_date': endDateController.text,
+        'the_action_taken': theActionTaken,
+        'similar_reaction': similarReaction,
+        'description_effect': descriptionEffect.text,
+        'symptoms_appear_of_any_device': symptomsAppearOfAnyDevice,
+        'the_patient_condition_now': thePatientConditionNow,
+        'taking_medication_chronically': takingMedicationChronically,
+        'image_url': imageUrl,
         'timestamp': FieldValue.serverTimestamp(),
+        'chronic_diseases': chronicDiseasesValue,
+        'other_medicines': otherMedicines != "نعم"
+            ? otherMedicines
+            : otherMedicinesController.text,
+        'comment':
+            commentController.text.isEmpty ? null : commentController.text,
       });
 
-      showCustomSnackBar(context, "'تم إرسال التقرير بنجاح!'");
-
+      showCustomSnackBar(context, "تم إرسال التقرير بنجاح!");
       _resetFields();
     } on FirebaseAuthException catch (e) {
       _handleFirebaseAuthError(e);
     } finally {
       setState(() {
-        _isLoading = false;
+        _isLoading = false; // إيقاف مؤشر التحميل بعد الانتهاء من الإرسال
       });
     }
   }
 
   void _containValidator() {
     if (!_formKey.currentState!.validate() && currentStep == 0) {
-      // إذا لم يتم ملء الحقول بشكل صحيح
       showCustomSnackBar(context, "الرجاء ملئ جميع الحقول بيانات مقدم التقرير");
       return;
     } else if (!_formKey1.currentState!.validate() && currentStep == 1) {
@@ -166,11 +287,13 @@ class _SendReportState extends State<SendReport> {
       chronicDiseases = null;
       takingMedicationChronically = null;
     });
-    Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (context) => LogInScreen(),
-        ));
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const ShowReport(),
+      ),
+      (route) => false,
+    );
   }
 
   void _handleFirebaseAuthError(FirebaseAuthException e) {
@@ -199,6 +322,9 @@ class _SendReportState extends State<SendReport> {
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
     double myHeight = MediaQuery.of(context).size.height;
     double myWidth = MediaQuery.of(context).size.width;
     return Scaffold(
@@ -212,13 +338,7 @@ class _SendReportState extends State<SendReport> {
                 steps: steps(context),
                 currentStep: currentStep,
                 onStepContinue: () {
-                  if (isLastStep) {
-                    setState(() {
-                      _isLoading = true;
-                    });
-                  } else {
-                    _containValidator();
-                  }
+                  onStepContinue();
                 },
                 onStepCancel: () {
                   if (isFirstStep) {
@@ -228,7 +348,7 @@ class _SendReportState extends State<SendReport> {
                 },
                 //  onStepTapped: (step) => setState(() => currentStep = step),
                 controlsBuilder: (context, details) => Padding(
-                  padding: EdgeInsets.only(top: 32),
+                  padding: const EdgeInsets.only(top: 32),
                   child: Row(
                     children: [
                       Expanded(
@@ -242,7 +362,7 @@ class _SendReportState extends State<SendReport> {
                           child: ElevatedButton(
                               onPressed:
                                   isFirstStep ? null : details.onStepCancel,
-                              child: Text('السابق')),
+                              child: const Text('السابق')),
                         ),
                       ]
                     ],
@@ -253,11 +373,33 @@ class _SendReportState extends State<SendReport> {
     );
   }
 
+  void onStepContinue() {
+    bool isStepValid = false;
+
+    if (currentStep == 0) {
+      isStepValid = _formKey.currentState?.validate() ?? false;
+    } else if (currentStep == 1) {
+      isStepValid = _formKey1.currentState?.validate() ?? false;
+    } else if (currentStep == 2) {
+      isStepValid = _formKey2.currentState?.validate() ?? false;
+      if (isStepValid) {
+        _createUserAndSendReport();
+        return;
+      }
+    }
+
+    if (isStepValid && currentStep < steps(context).length - 1) {
+      setState(() => currentStep += 1);
+    } else if (!isStepValid) {
+      showCustomSnackBar(context, "الرجاء التحقق من البيانات المدخلة.");
+    }
+  }
+
   List<Step> steps(context) => [
         Step(
           state: currentStep > 0 ? StepState.complete : StepState.indexed,
           isActive: currentStep >= 0,
-          title: Text('بيانات مقدم التقرير'),
+          title: const Text('بيانات مقدم التقرير'),
           content: Form(
             key: _formKey,
             child: Column(
@@ -315,7 +457,6 @@ class _SendReportState extends State<SendReport> {
                   },
                 ),
                 const SizedBox(height: 20),
-                // إضافة CustomDropdownButton لاختيار الجنس
                 CustomDropdownButton(
                   label: "النوع",
                   hint: "اختر النوع",
@@ -328,7 +469,6 @@ class _SendReportState extends State<SendReport> {
                   },
                 ),
                 const SizedBox(height: 20),
-                // إضافة CustomDropdownButton لاختيار مقدم التقرير
                 CustomDropdownButton(
                   label: "مقدم التقرير",
                   hint: "مقدم التقرير ",
@@ -341,7 +481,6 @@ class _SendReportState extends State<SendReport> {
                   },
                 ),
                 const SizedBox(height: 20),
-                // إضافة CustomDropdownButton لاختيار المحافظة
                 CustomDropdownButton(
                   label: "المحافظة",
                   hint: "اختر المحافظة",
@@ -385,7 +524,7 @@ class _SendReportState extends State<SendReport> {
         Step(
           state: currentStep > 1 ? StepState.complete : StepState.indexed,
           isActive: currentStep >= 1,
-          title: Text('المستحضر الطبي المشتبه به'),
+          title: const Text('المستحضر الطبي المشتبه به'),
           content: Form(
             key: _formKey1,
             child: Column(
@@ -406,24 +545,24 @@ class _SendReportState extends State<SendReport> {
                 ),
                 Row(
                   children: [
-                    Text('اختار صوره'),
+                    const Text('اختار صوره'),
                     photo == null
                         ? InkWell(
                             onTap: () => getImage(),
                             child: Container(
-                              margin: EdgeInsets.all(8),
+                              margin: const EdgeInsets.all(8),
                               height: MediaQuery.of(context).size.height * .05,
                               width: MediaQuery.of(context).size.width * .25,
                               decoration: BoxDecoration(
                                   borderRadius: BorderRadius.circular(18),
                                   color: Colors.grey.shade300),
-                              child: Icon(Icons.add),
+                              child: const Icon(Icons.add),
                             ),
                           )
                         : Row(
                             children: [
                               Container(
-                                margin: EdgeInsets.all(8),
+                                margin: const EdgeInsets.all(8),
                                 height: MediaQuery.of(context).size.height * .1,
                                 width: MediaQuery.of(context).size.width * .25,
                                 decoration: BoxDecoration(
@@ -435,7 +574,7 @@ class _SendReportState extends State<SendReport> {
                               ),
                               IconButton(
                                 onPressed: () => deleteImage(),
-                                icon: Icon(
+                                icon: const Icon(
                                   Icons.delete,
                                   color: Colors.red,
                                 ),
@@ -444,17 +583,59 @@ class _SendReportState extends State<SendReport> {
                           ),
                   ],
                 ),
-                CustomTextField(
-                  prefixIcon: const Icon(Icons.numbers),
-                  hint: 'رقم التشغيله',
-                  controller: batchNumberController,
-                  keyboardType: TextInputType.number,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'الرجاء إدخال رقم التشغيله';
-                    }
-                    return null;
-                  },
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    CustomTextField(
+                        keyboardType: TextInputType.number,
+                        controller: batchNumberController,
+                        hint: "رقم التشغيله",
+                        validator: (value) {
+                          if ((value == null || value.isEmpty) &&
+                              batchNumberPhoto == null) {
+                            return 'يرجى إدخال رقم التشغيلة أو اختيار صورة';
+                          }
+                          return null;
+                        }),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        const Text('أو اختر صورة لرقم التشغيلة:'),
+                        const Spacer(),
+                        IconButton(
+                          icon: const Icon(Icons.camera_alt),
+                          onPressed: _pickBatchNumberImage,
+                        ),
+                      ],
+                    ),
+                    if (batchNumberPhoto != null)
+                      Stack(
+                        alignment: Alignment.topRight,
+                        children: [
+                          Container(
+                            margin: const EdgeInsets.all(8),
+                            height: MediaQuery.of(context).size.height * .1,
+                            width: MediaQuery.of(context).size.width * .25,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(18),
+                              color: Colors.grey.shade300,
+                              image: DecorationImage(
+                                fit: BoxFit.cover,
+                                image: FileImage(batchNumberPhoto!),
+                              ),
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.delete, color: Colors.red),
+                            onPressed: () {
+                              setState(() {
+                                batchNumberPhoto = null;
+                              });
+                            },
+                          ),
+                        ],
+                      ),
+                  ],
                 ),
                 const SizedBox(height: 20),
                 CustomTextField(
@@ -480,8 +661,8 @@ class _SendReportState extends State<SendReport> {
                 ),
                 const SizedBox(height: 20),
                 CustomDropdownButton(
-                  label: "اﻻلجراء الذي تم اتخازه",
-                  hint: "اﻻلجراء الذي تم اتخازه",
+                  label: "الاجراء الذي تم اتخازه",
+                  hint: "الاجراء الذي تم اتخازه",
                   items: DropdownItems.theActionTaken,
                   selectedItem: theActionTaken,
                   onChanged: (value) {
@@ -521,7 +702,7 @@ class _SendReportState extends State<SendReport> {
         Step(
           state: currentStep > 2 ? StepState.complete : StepState.indexed,
           isActive: currentStep >= 2,
-          title: Text('اﻻثار العكسيه المشتبه'),
+          title: const Text('اﻻثار العكسيه المشتبه'),
           content: Form(
             key: _formKey2,
             child: Column(
@@ -566,6 +747,29 @@ class _SendReportState extends State<SendReport> {
                 ),
                 const SizedBox(height: 20),
                 CustomDropdownButton(
+                  label: "الادويه الاخري",
+                  hint: "هل تتناول ادويه اخري مع هذا الدواء؟",
+                  items: DropdownItems.trueOrFalse,
+                  selectedItem: otherMedicines,
+                  onChanged: (value) {
+                    setState(() {
+                      otherMedicines = value;
+                    });
+                  },
+                ),
+                if (otherMedicines == "نعم")
+                  CustomTextField(
+                    hint: 'ما هو الدواء',
+                    controller: otherMedicinesController,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return '';
+                      }
+                      return null;
+                    },
+                  ),
+                const SizedBox(height: 20),
+                CustomDropdownButton(
                   label: "هل تعاني من امراض مزمنه",
                   hint: "هل تعاني من امراض مزمنه",
                   items: DropdownItems.chronicDiseasesList,
@@ -576,6 +780,17 @@ class _SendReportState extends State<SendReport> {
                     });
                   },
                 ),
+                if (chronicDiseases == "اخرى")
+                  CustomTextField(
+                    hint: 'يرجى تحديد',
+                    controller: otherChronicDiseaseController,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'الرجاء تحديد الحالة المزمنة';
+                      }
+                      return null;
+                    },
+                  ),
                 const SizedBox(height: 20),
                 CustomDropdownButton(
                   label: "هل تتناول دواء بشكل مزمن",
@@ -586,6 +801,14 @@ class _SendReportState extends State<SendReport> {
                     setState(() {
                       takingMedicationChronically = value;
                     });
+                  },
+                ),
+                const SizedBox(height: 20),
+                CustomTextField(
+                  hint: 'أضف تعليقك هنا (اختياري)',
+                  controller: commentController,
+                  validator: (value) {
+                    return null;
                   },
                 ),
               ],
