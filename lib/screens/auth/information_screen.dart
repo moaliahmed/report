@@ -18,7 +18,7 @@ class InformationScreen extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
          // crossAxisAlignment: CrossAxisAlignment.end,
           children: [
-            Image.asset('assets/images/logo.png',width:myWidth*.8 ,),
+            Image.asset('assets/images/logo.jpeg',width:myWidth*.8 ,),
             SizedBox(height:myHeight*.05),
             Text(
               'الإبلاغ عن الآثار الجانبية للمستحضرات والمستلزمات الطبية',

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:lottie/lottie.dart';
 import 'package:report/const/app_const.dart';
 import 'package:report/screens/auth/log_in_screen.dart';
 import 'package:report/screens/pages/show_report.dart';
@@ -106,33 +107,33 @@ class _SendReportState extends State<SendReport> {
     }
   }
 
-  Future getImage() async {
-    showModalBottomSheet(
+  Future<void> getImage() async {
+    final ImageSource? source = await showDialog<ImageSource>(
       context: context,
-      builder: (BuildContext context) {
-        return SafeArea(
-          child: Wrap(
-            children: <Widget>[
-              ListTile(
-                  leading: const Icon(Icons.photo_library),
-                  title: const Text('المعرض'),
-                  onTap: () {
-                    _pickImage(ImageSource.gallery);
-                    Navigator.of(context).pop();
-                  }),
-              ListTile(
-                leading: const Icon(Icons.photo_camera),
-                title: const Text('الكاميرا'),
-                onTap: () {
-                  _pickImage(ImageSource.camera);
-                  Navigator.of(context).pop();
-                },
-              ),
-            ],
+      builder: (BuildContext context) => AlertDialog(
+        title: const Text("اختر المصدر"),
+        actions: <Widget>[
+          TextButton(
+            child: const Text("الكاميرا"),
+            onPressed: () => Navigator.pop(context, ImageSource.camera),
           ),
-        );
-      },
+          TextButton(
+            child: const Text("المعرض"),
+            onPressed: () => Navigator.pop(context, ImageSource.gallery),
+          ),
+        ],
+      ),
     );
+
+    if (source != null) {
+      final pickedFile = await ImagePicker().pickImage(source: source);
+      if (pickedFile != null) {
+        setState(() {
+          photo = File(pickedFile.path);
+        });
+        // هنا يمكنك تحميل الصورة إلى الخدمة السحابية وحفظ الرابط إذا لزم الأمر
+      }
+    }
   }
 
   Future<void> _pickImage(ImageSource source) async {
@@ -235,27 +236,13 @@ class _SendReportState extends State<SendReport> {
             commentController.text.isEmpty ? null : commentController.text,
       });
 
-      showCustomSnackBar(context, "تم إرسال التقرير بنجاح!");
       _resetFields();
+      setState(() {
+        isComplete = true;
+      });
     } on FirebaseAuthException catch (e) {
       _handleFirebaseAuthError(e);
-    } finally {
-      setState(() {
-        _isLoading = false; // إيقاف مؤشر التحميل بعد الانتهاء من الإرسال
-      });
     }
-  }
-
-  void _containValidator() {
-    if (!_formKey.currentState!.validate() && currentStep == 0) {
-      showCustomSnackBar(context, "الرجاء ملئ جميع الحقول بيانات مقدم التقرير");
-      return;
-    } else if (!_formKey1.currentState!.validate() && currentStep == 1) {
-      showCustomSnackBar(
-          context, "الرجاء ملئ جميع الحقول المستحضر الطبي المشتبه به");
-      return;
-    }
-    setState(() => currentStep += 1);
   }
 
   void _cancelValidator() {
@@ -287,13 +274,6 @@ class _SendReportState extends State<SendReport> {
       chronicDiseases = null;
       takingMedicationChronically = null;
     });
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(
-        builder: (context) => const ShowReport(),
-      ),
-      (route) => false,
-    );
   }
 
   void _handleFirebaseAuthError(FirebaseAuthException e) {
@@ -322,15 +302,52 @@ class _SendReportState extends State<SendReport> {
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
     double myHeight = MediaQuery.of(context).size.height;
     double myWidth = MediaQuery.of(context).size.width;
     return Scaffold(
       appBar: AppBar(title: const Text('إرسال تقرير')),
-      body: isComplete
-          ? Container()
+      body: _isLoading
+          ? isComplete
+              ? SizedBox(
+                  width: double.infinity,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Lottie.asset('assets/images/success.json',
+                          height: 300,
+                          repeat: true,
+                          reverse: true,
+                          fit: BoxFit.cover),
+                      Text(
+                        'تم ارسال التقرير بنجاح ',
+                        style: TextStyle(fontSize: 22),
+                      ),
+                      SizedBox(height: myHeight * .03),
+                      ElevatedButton(
+                          onPressed: () {
+                            Navigator.pushAndRemoveUntil(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const ShowReport(),
+                              ),
+                              (route) => false,
+                            );
+                          },
+                          child: Text(
+                            'للمشاهده التقرير',
+                            style: TextStyle(fontSize: 22),
+                          ))
+                    ],
+                  ),
+                )
+              : Center(
+                  child: Lottie.asset('assets/images/loading.json',
+                      height: 300,
+                      repeat: true,
+                      reverse: true,
+                      fit: BoxFit.cover),
+                )
           : Directionality(
               textDirection: TextDirection.rtl,
               child: Stepper(
@@ -531,56 +548,59 @@ class _SendReportState extends State<SendReport> {
               mainAxisAlignment: MainAxisAlignment.start,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: <Widget>[
-                CustomTextField(
-                  prefixIcon: const Icon(Icons.medical_services_outlined),
-                  keyboardType: TextInputType.text,
-                  hint: 'اسم الدواء',
-                  controller: medicamentNameController,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'الرجاء إدخال اسم الدواء';
-                    }
-                    return null;
-                  },
-                ),
-                Row(
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('اختار صوره'),
-                    photo == null
-                        ? InkWell(
-                            onTap: () => getImage(),
-                            child: Container(
-                              margin: const EdgeInsets.all(8),
-                              height: MediaQuery.of(context).size.height * .05,
-                              width: MediaQuery.of(context).size.width * .25,
-                              decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(18),
-                                  color: Colors.grey.shade300),
-                              child: const Icon(Icons.add),
+                    CustomTextField(
+                      prefixIcon: const Icon(Icons.medical_services_outlined),
+                      keyboardType: TextInputType.text,
+                      hint: 'اسم الدواء',
+                      controller: medicamentNameController,
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'الرجاء إدخال اسم الدواء';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        const Text('اختر صورة الدواء :'),
+                        const Spacer(),
+                        IconButton(
+                          icon: const Icon(Icons.camera_alt),
+                          onPressed: getImage,
+                        ),
+                      ],
+                    ),
+                    if (photo != null)
+                      Stack(
+                        alignment: Alignment.topRight,
+                        children: [
+                          Container(
+                            margin: const EdgeInsets.all(8),
+                            height: MediaQuery.of(context).size.height * .1,
+                            width: MediaQuery.of(context).size.width * .25,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(18),
+                              color: Colors.grey.shade300,
+                              image: DecorationImage(
+                                fit: BoxFit.cover,
+                                image: FileImage(photo!),
+                              ),
                             ),
-                          )
-                        : Row(
-                            children: [
-                              Container(
-                                margin: const EdgeInsets.all(8),
-                                height: MediaQuery.of(context).size.height * .1,
-                                width: MediaQuery.of(context).size.width * .25,
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(18),
-                                  color: Colors.grey.shade300,
-                                  image:
-                                      DecorationImage(image: FileImage(photo!)),
-                                ),
-                              ),
-                              IconButton(
-                                onPressed: () => deleteImage(),
-                                icon: const Icon(
-                                  Icons.delete,
-                                  color: Colors.red,
-                                ),
-                              ),
-                            ],
                           ),
+                          IconButton(
+                            icon: const Icon(Icons.delete, color: Colors.red),
+                            onPressed: () {
+                              setState(() {
+                                photo = null;
+                              });
+                            },
+                          ),
+                        ],
+                      ),
                   ],
                 ),
                 Column(

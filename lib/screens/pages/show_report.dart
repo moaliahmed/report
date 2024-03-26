@@ -184,7 +184,7 @@ class _ShowReportState extends State<ShowReport> {
                       child: Card(
                         margin: const EdgeInsets.all(10.0),
                         child: ExpansionTile(
-                          title: Text(report['name'] ?? 'No Name',
+                          title: Text(report['medicament_name'] ?? 'No Name',
                               style:
                                   const TextStyle(fontWeight: FontWeight.bold)),
                           children: <Widget>[
@@ -192,6 +192,7 @@ class _ShowReportState extends State<ShowReport> {
                               subtitle: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: <Widget>[
+                                  Text("الاسم: ${report['name'] ?? 'غير محدد'}"),
                                   Text("السن: ${report['age'] ?? 'غير محدد'}"),
                                   Text(
                                       "الوزن: ${report['weight'] ?? 'غير محدد'}"),

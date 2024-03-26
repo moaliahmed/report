@@ -36,7 +36,7 @@ class _LogInScreenState extends State<LogInScreen> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Image.asset(
-                      'assets/images/logo.png',
+                      'assets/images/logo.jpeg',
                       width: myWidth * .8,
                     ),
                     SizedBox(height: myHeight * .1),
@@ -68,20 +68,35 @@ class _LogInScreenState extends State<LogInScreen> {
                     const SizedBox(height: 20),
                     ElevatedButton(
                       onPressed: signInWithEmailAndPassword,
-                      child: const Text('تسجيل الدخول'),
+                      style: ButtonStyle(
+                        backgroundColor:
+                            MaterialStateProperty.resolveWith((states) {
+                          return Colors.deepPurple;
+                        }),
+                      ),
+                      child: const Text(
+                        'تسجيل الدخول',
+                        style: TextStyle(color: Colors.white, fontSize: 18),
+                      ),
                     ),
                     const SizedBox(height: 10),
                     ElevatedButton(
+                      style: ButtonStyle(
+                          backgroundColor: MaterialStateProperty.resolveWith(
+                              (states) => Colors.purple)),
                       onPressed: () {
                         Navigator.of(context).push(
                           MaterialPageRoute(
                               builder: (context) => const InformationScreen()),
                         );
                       },
-                      child: const Text('ارسال تقرير وانشاء حساب '),
+                      child: const Text(
+                        'ارسال تقرير وانشاء حساب ',
+                        style: TextStyle(color: Colors.white),
+                      ),
                     ),
                     Container(
-                      margin: EdgeInsets.only(top: myHeight * .05),
+                      margin: EdgeInsets.only(top: myHeight * .04),
                       padding: const EdgeInsets.all(12),
                       width: myWidth,
                       decoration: BoxDecoration(
@@ -102,23 +117,75 @@ class _LogInScreenState extends State<LogInScreen> {
                               'مقرات الهيئة: المنيل، العجوزة، الهرم، المعادي، المنصورية',
                               style: TextStyle(fontSize: 18),
                             ),
-                            TextButton(
-                                onPressed: () async {
-                                  launchPhoneNumber('+15301');
-                                },
-                                child: const Text(
-                                  '15301',
+                            SizedBox(height: myHeight * .01),
+                            const Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  '15301 +',
+                                  style: TextStyle(
+                                      fontSize: 18, color: Colors.deepPurple),
+                                ),
+                                Text(
+                                  'email:info@edaegypt.eg',
+                                  style: TextStyle(
+                                      fontSize: 18, color: Colors.deepPurple),
+                                ),
+                              ],
+                            ),
+                            SizedBox(height: myHeight * .01),
+                            const Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  'Dr. Ahmed saif eldin',
                                   style: TextStyle(fontSize: 18),
-                                )),
-                            TextButton(
-                                onPressed: () {
-                                  launchEmail('info@edaegypt.gov.eg', 'Subject',
-                                      'Body');
-                                },
-                                child: const Text(
-                                  'info@edaegypt.gov.eg',
+                                ),
+                                Text(
+                                  'Dr. Mostafa adel',
                                   style: TextStyle(fontSize: 18),
-                                )),
+                                ),
+                              ],
+                            ),
+                            SizedBox(height: myHeight * .01),
+                            const Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  'Jana Moamen Elgamal',
+                                  style: TextStyle(fontSize: 16),
+                                ),
+                                Text(
+                                  'Menna Khaled Mohamed',
+                                  style: TextStyle(fontSize: 16),
+                                ),
+                              ],
+                            ),
+                            SizedBox(height: myHeight * .01),
+                            const Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  'Mariam Raafat Noshy',
+                                  style: TextStyle(fontSize: 16),
+                                ),
+                                Text(
+                                  'Dian Gamal Mahmoud',
+                                  style: TextStyle(fontSize: 16),
+                                ),
+                              ],
+                            ),
+                            SizedBox(height: myHeight * .01),
+                            const Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  'Mariam Mahmoud',
+                                  style: TextStyle(fontSize: 16),
+                                ),
+                              ],
+                            ),
+                            SizedBox(height: myHeight * .01),
                           ],
                         ),
                       ),
