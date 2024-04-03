@@ -15,7 +15,7 @@
 	<key>CFBundleName</key>
 	<string>report</string>
 	<key>CFBundlePackageType</key>
-	<string>APPL</string>
+	<string>وعي</string>
 	<key>CFBundleShortVersionString</key>
 	<string>$(FLUTTER_BUILD_NAME)</string>
 	<key>CFBundleSignature</key>
